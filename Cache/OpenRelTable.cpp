@@ -363,7 +363,7 @@ int OpenRelTable::closeRel(int relId){
     AttrCacheTable::attrCache[relId] = nullptr;
     RelCacheTable::relCache[relId] = nullptr;
     
-    tableMetaInfo[relId].free = false;
+    tableMetaInfo[relId].free = true;
 
     return SUCCESS;
 

@@ -86,32 +86,65 @@ int RecBuffer::getRecord(union Attribute *rec,int slotNum){
 
 int RecBuffer::setRecord(union Attribute *rec,int slotNum){
     
-    /* 
-        most of this are same as getrecord only difference is the memcpy is reversed and we need to set it to the disk 
-        so we use writeBlock..
-    */
+    /* get the starting address of the buffer containing the block
+       using loadBlockAndGetBufferPtr(&bufferPtr). */
+
+    unsigned char* bufferPtr;
+
+    int ret = loadBlockAndGetBufferPtr(&bufferPtr);
+    
+    if(ret != SUCCESS){
+        return ret;
+    }
+
+    /* get the header of the block using the getHeader() function */
+
     struct HeadInfo head;
     this->getHeader(&head);
 
-    int attrCount = head.numAttrs;
-    int slotCount = head.numSlots;
+    int attrCount = head.numAttrs; // get number of attributes in the block.
+    int slotCount = head.numSlots; // get the number of slots in the block.
 
-    unsigned char buffer[BLOCK_SIZE];
+    // if input slotNum is not in the permitted range return E_OUTOFBOUND.
 
-    Disk::readBlock(buffer,this->blockNum);
+    if(slotNum >= slotCount){
+        return E_OUTOFBOUND;
+    }
+
+    /* offset bufferPtr to point to the beginning of the record at required
+       slot. the block contains the header, the slotmap, followed by all
+       the records. so, for example,
+       record at slot x will be at bufferPtr + HEADER_SIZE + (x*recordSize)
+       copy the record from `rec` to buffer using memcpy
+       (hint: a record will be of size ATTR_SIZE * numAttrs)
+    */
 
     int recordSize = attrCount*ATTR_SIZE;
     int offset = HEADER_SIZE + slotCount + recordSize * slotNum;
-    unsigned char *slotPointer = buffer + offset;
+    unsigned char *slotPointer = bufferPtr + offset;
 
     //change starts here
 
     memcpy(slotPointer,rec,recordSize);
 
-    Disk::writeBlock(buffer,this->blockNum);
+    StaticBuffer::setDirtyBit(this->blockNum);
+
+    /* (the above function call should not fail since the block is already
+       in buffer and the blockNum is valid. If the call does fail, there
+       exists some other issue in the code) */
 
     return SUCCESS;
 }
+
+/* NOTE: This function will NOT check if the block has been initialised as a
+   record or an index block. It will copy whatever content is there in that
+   disk block to the buffer.
+   Also ensure that all the methods accessing and updating the block's data
+   should call the loadBlockAndGetBufferPtr() function before the access or
+   update is done. This is because the block might not be present in the
+   buffer due to LRU buffer replacement. So, it will need to be bought back
+   to the buffer before any operations can be done.
+ */
 
 int BlockBuffer::loadBlockAndGetBufferPtr(unsigned char** bufferPtr){
     
@@ -130,6 +163,18 @@ int BlockBuffer::loadBlockAndGetBufferPtr(unsigned char** bufferPtr){
 
         //since it is not in the buffer(cache) we load it into the cache as we can see the buffer we load is it to blocks cache
         Disk::readBlock(StaticBuffer::blocks[bufferNum],this->blockNum);
+
+    }else{
+
+        // set the timestamp of the corresponding buffer to 0 and increment the
+        // timestamps of all other occupied buffers in BufferMetaInfo.
+
+        for(int idx=0;idx<BUFFER_CAPACITY;idx++){
+            
+            if(idx == bufferNum) StaticBuffer::metainfo[idx].timeStamp = 0;
+            else StaticBuffer::metainfo[idx].timeStamp++;
+        
+        }
 
     }
 

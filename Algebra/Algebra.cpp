@@ -47,7 +47,7 @@ int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attr
 
     int ret = AttrCacheTable::getAttrCatEntry(srcRelId,attr,&attrCatEntry);
 
-    std::cout<<"ret: "<<ret<<std::endl;
+    // std::cout<<"ret: "<<ret<<std::endl;
     if(ret != SUCCESS){
         return ret;
     }
@@ -94,6 +94,8 @@ int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attr
         std::cout<<" "<<attrCatEntry.attrName<<" |";
     }
     std::cout<<std::endl;
+
+    RelCacheTable::resetSearchIndex(srcRelId);
 
     while(true){
         RecId searchRes = BlockAccess::linearSearch(srcRelId,attr,attrVal,op);
