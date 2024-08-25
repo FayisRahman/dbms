@@ -2,8 +2,7 @@
 
 #include <cstring>
 #include <cstdlib>
-
-#include<iostream>
+#include <iostream>
 
 using namespace std;
 
@@ -176,7 +175,7 @@ and open the appropriate one.
 int OpenRelTable::getRelId(char relName[ATTR_SIZE]){
 
     for(int idx=0;idx<MAX_OPEN;idx++){
-        if(RelCacheTable::relCache[idx]!=nullptr && strcmp((RelCacheTable::relCache[idx]->relCatEntry).relName,relName) == 0){
+        if(!tableMetaInfo[idx].free && strcmp(tableMetaInfo[idx].relName,relName) == 0){
             return idx;
         }
     }
@@ -357,6 +356,30 @@ int OpenRelTable::closeRel(int relId){
         return E_RELNOTOPEN;
     }
 
+    /****** Releasing the Relation Cache entry of the relation ******/
+
+    if (RelCacheTable::relCache[relId]->dirty){
+
+        /* Get the Relation Catalog entry from RelCacheTable::relCache
+        Then convert it to a record using RelCacheTable::relCatEntryToRecord(). */
+
+        Attribute rec[RELCAT_NO_ATTRS];
+
+        RelCacheTable::relCatEntryToRecord(&(RelCacheTable::relCache[relId]->relCatEntry),rec);
+
+        // declaring an object of RecBuffer class to write back to the buffer
+        RecId recId = RelCacheTable::relCache[relId]->recId;
+
+        RecBuffer relCatBlock(recId.block);
+
+        // Write back to the buffer using relCatBlock.setRecord() with recId.slot
+
+        relCatBlock.setRecord(rec,recId.slot);
+
+    }
+
+    /****** Releasing the Attribute Cache entry of the relation ******/
+
     delete RelCacheTable::relCache[relId];
     freeAttrCacheEntry(AttrCacheTable::attrCache[relId]);
 
@@ -369,7 +392,6 @@ int OpenRelTable::closeRel(int relId){
 
 
 }
-
 
 
 OpenRelTable::~OpenRelTable() {

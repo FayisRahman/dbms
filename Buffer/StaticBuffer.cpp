@@ -1,11 +1,26 @@
 #include "StaticBuffer.h"
 
-#include <iostream>
+// #include <iostream>
+#include <cstring>
 
 unsigned char StaticBuffer::blocks[BUFFER_CAPACITY][BLOCK_SIZE];
 struct BufferMetaInfo StaticBuffer::metainfo[BUFFER_CAPACITY];
+// declare the blockAllocMap array
+unsigned char StaticBuffer::blockAllocMap[DISK_BLOCKS];
 
 StaticBuffer::StaticBuffer(){
+
+    // copy blockAllocMap blocks from disk to buffer (using readblock() of disk)
+    // blocks 0 to 3
+    unsigned char buffPtr[BLOCK_SIZE];
+    int blockAllocMapSlot = 0;
+    for(int blockIdx=0;blockIdx<=3;blockIdx++){
+        Disk::readBlock(buffPtr,blockIdx);
+        for(int slot=0;slot<BLOCK_SIZE;slot++){
+            blockAllocMap[blockAllocMapSlot] = buffPtr[slot];
+            blockAllocMapSlot++;
+        }
+    }
 
     //as this is the constructer we initialise all the buffer(cache) as unused
     for(int bufferBlockIdx = 0;bufferBlockIdx<BUFFER_CAPACITY;bufferBlockIdx++){
@@ -15,7 +30,7 @@ StaticBuffer::StaticBuffer(){
         metainfo[bufferBlockIdx].timeStamp = -1;
         metainfo[bufferBlockIdx].blockNum = -1;
     }
-
+    
 }
 /*
     In stage 3 we wont be modifying the destructor so we just initialised the destructor
@@ -23,6 +38,9 @@ StaticBuffer::StaticBuffer(){
 
 // write back all modified blocks on system exit
 StaticBuffer::~StaticBuffer(){
+
+    // copy blockAllocMap blocks from buffer to disk(using writeblock() of disk)
+
     /*iterate through all the buffer blocks,
     write back blocks with metainfo as free=false,dirty=true
     using Disk::writeBlock()
@@ -48,23 +66,25 @@ int StaticBuffer::getFreeBuffer(int blockNum){
 
     // here we check which bufferBlock is free by iterating through the metinfo of the buffer metinfo and gets the free block index
     for(int bufferBlockIdx = 0;bufferBlockIdx<BUFFER_CAPACITY;bufferBlockIdx++){
-        if(metainfo[bufferBlockIdx].free){
+        
+        if(metainfo[bufferBlockIdx].free && bufferNum == -1){
             bufferNum = bufferBlockIdx;
-        }else{
+        }else if(!metainfo[bufferBlockIdx].free){
             metainfo[bufferBlockIdx].timeStamp++;
         }
+
     }
 
     if(bufferNum == -1){
         int maxTime = -1,idx;
         for(int bufferBlockIdx = 0;bufferBlockIdx<BUFFER_CAPACITY;bufferBlockIdx++){
-            if(maxTime < metainfo[bufferBlockIdx].timeStamp){
+            if(!metainfo[bufferNum].free && maxTime < metainfo[bufferBlockIdx].timeStamp){
                 maxTime = metainfo[bufferBlockIdx].timeStamp;
                 idx = bufferBlockIdx;
             }
         }
         bufferNum = idx;
-        if(metainfo[bufferNum].dirty){
+        if(!metainfo[bufferNum].free && metainfo[bufferNum].dirty){
             Disk::writeBlock(blocks[bufferNum],metainfo[bufferNum].blockNum);
         }
     }
@@ -80,6 +100,7 @@ int StaticBuffer::getFreeBuffer(int blockNum){
 }
 
 int StaticBuffer::setDirtyBit(int blockNum){
+    
     int bufferIdx = getBufferNum(blockNum);
 
     if(bufferIdx == E_BLOCKNOTINBUFFER){
@@ -103,7 +124,7 @@ int StaticBuffer::getBufferNum(int blockNum){
     
     //this to find where we have stored the block in the cache
     for(int bufferBlockIdx = 0; bufferBlockIdx < BUFFER_CAPACITY; bufferBlockIdx++){
-        if(metainfo[bufferBlockIdx].blockNum == blockNum){
+        if(!metainfo[bufferBlockIdx].free && metainfo[bufferBlockIdx].blockNum == blockNum){
             return bufferBlockIdx;
         }
     }
