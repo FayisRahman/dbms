@@ -310,7 +310,7 @@ int BlockAccess::insert(int relId,union Attribute* record){
     // ( use RelCacheTable::getRelCatEntry() of Cache Layer)
     RelCatEntry relCatEntry;
 
-    std::cout<<record[0].sVal<<std::endl;
+    // std::cout<<record[0].sVal<<std::endl;
 
     RelCacheTable::getRelCatEntry(relId,&relCatEntry);
     
@@ -388,6 +388,7 @@ int BlockAccess::insert(int relId,union Attribute* record){
         // let ret be the return value of getBlockNum() function call
 
         RecBuffer blockBuffer;
+
         int ret = blockBuffer.getBlockNum();
 
         if(ret == E_DISKFULL) return E_DISKFULL;

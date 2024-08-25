@@ -5,13 +5,14 @@
 
 int Frontend::create_table(char relname[ATTR_SIZE], int no_attrs, char attributes[][ATTR_SIZE],
                            int type_attrs[]) {
-  // Schema::createRel
-  return SUCCESS;
+  return Schema::createRel(relname,no_attrs,attributes,type_attrs);
+  // return SUCCESS;
 }
 
 int Frontend::drop_table(char relname[ATTR_SIZE]) {
-  // Schema::deleteRel
-  return SUCCESS;
+  
+  return Schema::deleteRel(relname);
+  // return SUCCESS;
 }
 
 int Frontend::open_table(char relname[ATTR_SIZE]) {
@@ -46,6 +47,7 @@ int Frontend::drop_index(char relname[ATTR_SIZE], char attrname[ATTR_SIZE]) {
 }
 
 int Frontend::insert_into_table_values(char relname[ATTR_SIZE], int attr_count, char attr_values[][ATTR_SIZE]) {
+  
   return Algebra::insert(relname,attr_count,attr_values);
   // return SUCCESS;
 }

@@ -17,8 +17,9 @@ StaticBuffer::StaticBuffer(){
     for(int blockIdx=0;blockIdx<=3;blockIdx++){
         Disk::readBlock(buffPtr,blockIdx);
         for(int slot=0;slot<BLOCK_SIZE;slot++){
-            blockAllocMap[blockAllocMapSlot] = buffPtr[slot];
-            blockAllocMapSlot++;
+
+            blockAllocMap[blockAllocMapSlot++] = buffPtr[slot];
+            
         }
     }
 
@@ -26,7 +27,6 @@ StaticBuffer::StaticBuffer(){
     for(int bufferBlockIdx = 0;bufferBlockIdx<BUFFER_CAPACITY;bufferBlockIdx++){
         metainfo[bufferBlockIdx].free = true;
         metainfo[bufferBlockIdx].dirty = false;
-        metainfo[bufferBlockIdx].timeStamp = -1;
         metainfo[bufferBlockIdx].timeStamp = -1;
         metainfo[bufferBlockIdx].blockNum = -1;
     }
@@ -40,6 +40,17 @@ StaticBuffer::StaticBuffer(){
 StaticBuffer::~StaticBuffer(){
 
     // copy blockAllocMap blocks from buffer to disk(using writeblock() of disk)
+
+    unsigned char buffPtr[BLOCK_SIZE];
+    int blockAllocMapSlot = 0;
+    for(int blockIdx=0;blockIdx<=3;blockIdx++){
+        for(int slot=0;slot<BLOCK_SIZE;slot++){
+
+            buffPtr[slot] = blockAllocMap[blockAllocMapSlot++];
+            
+        }
+        Disk::writeBlock(buffPtr,blockIdx);
+    }
 
     /*iterate through all the buffer blocks,
     write back blocks with metainfo as free=false,dirty=true

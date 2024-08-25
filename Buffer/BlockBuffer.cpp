@@ -31,11 +31,10 @@ BlockBuffer::BlockBuffer(char blockType){
     // otherwise set the error code returned as the block number.
 
 
-    if(blockNum >= 0 && blockNum < DISK_BLOCKS){
-        this->blockNum = blockNum;
-    }else{
-        std::cout<<"Error(BlockBuffer.cpp:37):Block is Not Available\n";
+    if(!(blockNum >= 0 && blockNum < DISK_BLOCKS)){
+        std::cout<<"Error(BlockBuffer.cpp:37):Block is Not Available\n";   
     }
+    this->blockNum = blockNum;
 
     // (The caller must check if the constructor allocatted block successfully
     // by checking the value of block number field.)
