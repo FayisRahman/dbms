@@ -145,5 +145,8 @@ int Schema::createRel(char relName[],int nAttrs, char attrs[][ATTR_SIZE],int att
              // (this is necessary because we had already created the
              //  relation catalog entry which needs to be removed)
         */
+       if(retVal !=SUCCESS)return retVal;
+
     }
+    return SUCCESS;
 }
