@@ -406,3 +406,33 @@ int compareAttrs(Attribute attr1, Attribute attr2, int attrType){
     else return 0;
     
 }
+
+void BlockBuffer::releaseBlock(){
+    
+    if(this->blockNum == -1)return;
+    
+    //else
+
+    /* get the buffer number of the buffer assigned to the block
+        using StaticBuffer::getBufferNum().
+        (this function return E_BLOCKNOTINBUFFER if the block is not
+        currently loaded in the buffer)
+    */
+    
+    int bufferNum = StaticBuffer::getBufferNum(this->blockNum);
+
+    if(bufferNum ==E_BLOCKNOTINBUFFER)return;
+
+    // if the block is present in the buffer, free the buffer
+    // by setting the free flag of its StaticBuffer::tableMetaInfo entry
+    // to true.
+    StaticBuffer::metainfo[bufferNum].free = true;
+
+    // free the block in disk by setting the data type of the entry
+    // corresponding to the block number in StaticBuffer::blockAllocMap
+    // to UNUSED_BLK.
+    StaticBuffer::blockAllocMap[this->blockNum] = UNUSED_BLK;
+
+    // set the object's blockNum to INVALID_BLOCK (-1)
+    this->blockNum = -1;
+}

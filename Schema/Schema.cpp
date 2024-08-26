@@ -108,7 +108,7 @@ int Schema::createRel(char relName[],int nAttrs, char attrs[][ATTR_SIZE],int att
 
     Attribute relCatRecord[RELCAT_NO_ATTRS];
     // fill relCatRecord fields as given below
-    strcpy(relCatRecord[RELCAT_REL_NAME_INDEX].sVal,attrs[0]);                             // offset RELCAT_REL_NAME_INDEX: relName
+    strcpy(relCatRecord[RELCAT_REL_NAME_INDEX].sVal,relName);                             // offset RELCAT_REL_NAME_INDEX: relName
     relCatRecord[RELCAT_NO_ATTRIBUTES_INDEX].nVal = nAttrs;                                // offset RELCAT_NO_ATTRIBUTES_INDEX: numOfAttributes
     relCatRecord[RELCAT_NO_RECORDS_INDEX].nVal = 0;                                        // offset RELCAT_NO_RECORDS_INDEX: 0
     relCatRecord[RELCAT_FIRST_BLOCK_INDEX].nVal = -1;                                      // offset RELCAT_FIRST_BLOCK_INDEX: -1
@@ -145,5 +145,43 @@ int Schema::createRel(char relName[],int nAttrs, char attrs[][ATTR_SIZE],int att
              // (this is necessary because we had already created the
              //  relation catalog entry which needs to be removed)
         */
+       if(retVal!=SUCCESS)return retVal;
     }
+
+    return SUCCESS;
+}
+
+int Schema::deleteRel(char *relName) {
+    // if the relation to delete is either Relation Catalog or Attribute Catalog,
+    //     return E_NOTPERMITTED
+        // (check if the relation names are either "RELATIONCAT" and "ATTRIBUTECAT".
+        // you may use the following constants: RELCAT_RELNAME and ATTRCAT_RELNAME)
+    if(strcmp(relName,RELCAT_RELNAME) == 0 || strcmp(relName,ATTRCAT_RELNAME) == 0){
+        return E_NOTPERMITTED;
+    }
+
+    // get the rel-id using appropriate method of OpenRelTable class by
+    // passing relation name as argument
+    int relId = OpenRelTable::getRelId(relName);
+
+    // if relation is opened in open relation table, return E_RELOPEN
+
+    if(relId != E_RELNOTOPEN) return E_RELOPEN;
+
+    // Call BlockAccess::deleteRelation() with appropriate argument.
+
+    int retVal = BlockAccess::deleteRelation(relName);
+
+    // return the value returned by the above deleteRelation() call
+
+    /* the only thing that should be returned from deleteRelation() is E_RELNOTEXIST.
+       The deleteRelation call may return E_OUTOFBOUND from the call to
+       loadBlockAndGetBufferPtr, but if your implementation so far has been
+       correct, it should not reach that point. That error could only occur
+       if the BlockBuffer was initialized with an invalid block number.
+    */
+   
+    if(retVal == E_RELNOTEXIST)return SUCCESS;
+    return retVal;
+
 }
