@@ -181,7 +181,6 @@ int Schema::deleteRel(char *relName) {
        if the BlockBuffer was initialized with an invalid block number.
     */
    
-    if(retVal == E_RELNOTEXIST)return SUCCESS;
     return retVal;
 
 }

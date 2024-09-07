@@ -345,6 +345,7 @@ void freeAttrCacheEntry(AttrCacheEntry* head){
 }
 
 int OpenRelTable::closeRel(int relId){
+    
     if(relId == RELCAT_RELID || relId == ATTRCAT_RELID){
         return E_NOTPERMITTED;
     }
