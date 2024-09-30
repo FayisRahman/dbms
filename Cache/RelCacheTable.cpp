@@ -121,4 +121,3 @@ int RelCacheTable::resetSearchIndex(int relId){
 }
 
 
-
