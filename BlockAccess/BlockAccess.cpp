@@ -4,6 +4,7 @@
 #include <iostream>
 
 
+
 int BlockAccess::renameRelation(char oldName[ATTR_SIZE],char newName[ATTR_SIZE]){
     /* reset the searchIndex of the relation catalog using
        RelCacheTable::resetSearchIndex() */
@@ -511,7 +512,34 @@ int BlockAccess::insert(int relId,union Attribute* record){
     relCatEntry.numRecs++;
     RelCacheTable::setRelCatEntry(relId,&relCatEntry);
 
-    return SUCCESS;
+     /* B+ Tree Insertions */
+    // (the following section is only relevant once indexing has been implemented)
+
+    int flag = SUCCESS;
+    // Iterate over all the attributes of the relation
+    AttrCatEntry attrCatEntry;
+    for(int attrOffset = 0;attrOffset<numOfAttributes;attrOffset++){ // (let attrOffset be iterator ranging from 0 to numOfAttributes-1)
+        // get the attribute catalog entry for the attribute from the attribute cache
+        // (use AttrCacheTable::getAttrCatEntry() with args relId and attrOffset)
+        AttrCacheTable::getAttrCatEntry(relId,attrOffset,&attrCatEntry);
+        // get the root block field from the attribute catalog entry
+
+        // if index exists for the attribute(i.e. rootBlock != -1)
+        if(attrCatEntry.rootBlock!=-1){
+            /* insert the new record into the attribute's bplus tree using
+             BPlusTree::bPlusInsert()*/
+            int retVal = BPlusTree::bPlusInsert(relId, attrCatEntry.attrName,
+                                                record[attrOffset], rec_id);
+
+            if (retVal == E_DISKFULL) {
+                //(index for this attribute has been destroyed)
+                // flag = E_INDEX_BLOCKS_RELEASED
+                flag = E_INDEX_BLOCKS_RELEASED;
+            }
+        }
+    }
+
+    return flag;
 }
 
 /*
@@ -539,6 +567,7 @@ int BlockAccess::search(int relId, Attribute *record, char attrName[ATTR_SIZE], 
     int rootBlk = attrCatEntry.rootBlock;
     /* if Index does not exist for the attribute (check rootBlock == -1) */ 
 
+    
     if(rootBlk==-1) {
         
         /* search for the record id (recid) corresponding to the attribute with
@@ -554,8 +583,9 @@ int BlockAccess::search(int relId, Attribute *record, char attrName[ATTR_SIZE], 
         condition op using BPlusTree::bPlusSearch() */
 
         recId = BPlusTree::bPlusSearch(relId,attrName,attrVal,op);
-        std::cout<<"bplus tree used"<<std::endl;
+        std::cout<<"bplus tree used "<<recId.block<<" "<<recId.slot<<std::endl;
     }
+
 
 
     // if there's no record satisfying the given condition (recId = {-1, -1})
@@ -748,6 +778,7 @@ int BlockAccess::deleteRelation(char relName[ATTR_SIZE]) {
         // if index exists for the attribute (rootBlock != -1), call bplus destroy
         if (rootBlock != -1) {
             // delete the bplus tree rooted at rootBlock using BPlusTree::bPlusDestroy()
+            BPlusTree::bPlusDestroy(rootBlock);
         }
 
     } 
@@ -907,3 +938,4 @@ int BlockAccess::project(int relId,Attribute *record){
     return SUCCESS;
 
 }
+

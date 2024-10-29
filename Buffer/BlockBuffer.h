@@ -54,6 +54,7 @@ protected:
 
 public:
 	// methods
+	static int compareCount;
 	BlockBuffer(char blockType);
 	BlockBuffer(int blockNum);
 	int getBlockNum();

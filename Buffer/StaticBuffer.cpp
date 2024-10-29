@@ -2,6 +2,7 @@
 
 // #include <iostream>
 #include <cstring>
+#include<iostream>
 
 unsigned char StaticBuffer::blocks[BUFFER_CAPACITY][BLOCK_SIZE];
 struct BufferMetaInfo StaticBuffer::metainfo[BUFFER_CAPACITY];
@@ -89,7 +90,7 @@ int StaticBuffer::getFreeBuffer(int blockNum){
     if(bufferNum == -1){
         int maxTime = -1,idx;
         for(int bufferBlockIdx = 0;bufferBlockIdx<BUFFER_CAPACITY;bufferBlockIdx++){
-            if(!metainfo[bufferNum].free && maxTime < metainfo[bufferBlockIdx].timeStamp){
+            if(!metainfo[bufferBlockIdx].free && maxTime < metainfo[bufferBlockIdx].timeStamp){
                 maxTime = metainfo[bufferBlockIdx].timeStamp;
                 idx = bufferBlockIdx;
             }

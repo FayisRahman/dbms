@@ -152,6 +152,8 @@ int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attr
 
     int count = 0;
 
+    // BlockBuffer::compareCount=0;
+
     while(true){
 
         Attribute record[src_nAttrs];
@@ -179,6 +181,8 @@ int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attr
         }
         
     }
+
+    // std::cout<<BlockBuffer::compareCount<<std::endl;
 
     Schema::closeRel(targetRel);
 
