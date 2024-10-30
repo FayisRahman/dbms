@@ -1018,7 +1018,7 @@ int BPlusTree::splitInternal(int intBlockNum, InternalEntry internalEntries[]) {
     for (int i=0;i< rightBlkHeader.numEntries;i++) { /* each child block of the new right block */
         // declare an instance of BlockBuffer to access the child block using
         // constructor 2
-        BlockBuffer childBlk(internalEntries[i + MIDDLE_INDEX_INTERNAL +1].lChild);
+        BlockBuffer childBlk(internalEntries[i + MIDDLE_INDEX_INTERNAL + 1].lChild);
         // std::cout<<"1000 lchild= "<<internalEntries[i + MIDDLE_INDEX_INTERNAL +1].lChild<<"\n";
         HeadInfo header;
 
