@@ -194,9 +194,9 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
 
             leafBlk.getEntry(&leafEntry,index);
 
-            std::cout<<"bptree:189 leafEntry"<< leafEntry.attrVal.sVal<<std::endl;
+            std::cout<<"bptree:189 leafEntry ";printVal(leafEntry.attrVal,type);
 
-            int cmpVal = compareAttrs(leafEntry.attrVal,attrVal,NUMBER);/* comparison between leafEntry's attribute value
+            int cmpVal = compareAttrs(leafEntry.attrVal,attrVal,type);/* comparison between leafEntry's attribute value
                             and input attrVal using compareAttrs()*/
 
             if (
@@ -211,7 +211,7 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
 
                 // set search index to {block, index}
 
-                IndexId searchIndex{block,index};
+                searchIndex = IndexId{block, index};
 
                 AttrCacheTable::setSearchIndex(relId,attrName,&searchIndex);
 
@@ -326,10 +326,11 @@ int BPlusTree::bPlusCreate(int relId, char attrName[ATTR_SIZE]) {
         recBuffer.getSlotMap(slotMap);
 
         // for every occupied slot of the block
-        for(int slot=0;slot<relCatEntry.numSlotsPerBlk;slot++){
 
-            if(slotMap[slot]==SLOT_UNOCCUPIED) continue;
+        for(int slot=0;slot<relCatEntry.numSlotsPerBlk;slot++){
             
+            if(slotMap[slot]==SLOT_UNOCCUPIED) continue;
+
             Attribute record[relCatEntry.numAttrs];
 
             // load the record corresponding to the slot into `record`
@@ -348,7 +349,7 @@ int BPlusTree::bPlusCreate(int relId, char attrName[ATTR_SIZE]) {
             // insert fails i.e when disk is full)
             int retVal = bPlusInsert(relId, attrName, record[attrCatEntry.offset], recId);
 
-            std::cout<<"bPlus inserted on "<<count++<<" elements"<<std::endl;
+            std::cout<<"no of slots per block is = "<<relCatEntry.numSlotsPerBlk<<" bPlus inserted on "<<count++<<" elements and no. of slots = "<<slot<<std::endl;
 
             if (retVal == E_DISKFULL) {
                 // (unable to get enough blocks to build the B+ Tree.)
@@ -365,6 +366,7 @@ int BPlusTree::bPlusCreate(int relId, char attrName[ATTR_SIZE]) {
         // set block = rblock of current block (from the header)
 
         block = header.rblock;
+        std::cout<<"block is" << block << "\n";
     }
 
     return SUCCESS;
@@ -413,13 +415,19 @@ int BPlusTree::bPlusDestroy(int rootBlockNum) {
 
         indInternal.getEntry(&entry,0);
 
-        if(entry.lChild != -1) bPlusDestroy(entry.lChild);
+        if(entry.lChild != -1) {
+            int ret = bPlusDestroy(entry.lChild);
+
+            if(ret != SUCCESS) return ret;
+        } 
 
         for(int i=0;i<header.numEntries;i++){
 
             indInternal.getEntry(&entry,i);
 
-            bPlusDestroy(entry.rChild);
+            int ret = bPlusDestroy(entry.rChild);
+            
+            if(ret != SUCCESS) return ret;
 
         }
 
@@ -512,7 +520,7 @@ int BPlusTree::findLeafToInsert(int rootBlock, Attribute attrVal, int attrType) 
     int blockNum = rootBlock;
 
     while (StaticBuffer::getStaticBlockType(blockNum) != IND_LEAF) {  // use StaticBuffer::getStaticBlockType()
-
+        
         // declare an IndInternal object for block using appropriate constructor
 
         IndInternal indInternal(blockNum);
@@ -611,7 +619,7 @@ int BPlusTree::insertIntoLeaf(int relId, char attrName[ATTR_SIZE], int blockNum,
 
             leafBlock.getEntry(&temp,i);
 
-            if(compareAttrs(temp.attrVal,indexEntry.attrVal,attrCatEntry.attrType) >= 0 && isNotAdded){
+            if(compareAttrs(temp.attrVal,indexEntry.attrVal,attrCatEntry.attrType) > 0 && isNotAdded){
                 indices[index++] = indexEntry;
                 // std::cout<<"bp608:index entry ";printVal(indexEntry.attrVal,attrCatEntry.attrType);
                 isNotAdded = false;
@@ -831,9 +839,9 @@ int BPlusTree::insertIntoInternal(int relId, char attrName[ATTR_SIZE], int intBl
 
     for(int slot=0;slot<blockHeader.numEntries;slot++){
         
-        intBlk.getEntry(&entry,index);
+        intBlk.getEntry(&entry,slot);
 
-        if(compareAttrs(entry.attrVal,intEntry.attrVal,attrCatEntry.attrType) >= 0 && insertedIndex == -1){
+        if(compareAttrs(entry.attrVal,intEntry.attrVal,attrCatEntry.attrType) > 0 && insertedIndex == -1){
             insertedIndex = index;
             internalEntries[index++] = intEntry;
         }
@@ -989,8 +997,6 @@ int BPlusTree::splitInternal(int intBlockNum, InternalEntry internalEntries[]) {
 
     leftBlk.setHeader(&leftBlkHeader);
 
-    std::cout<<"---------1--------\n";
-
     /*
     - set the first 50 entries of leftBlk = index 0 to 49 of internalEntries
       array
@@ -1009,12 +1015,11 @@ int BPlusTree::splitInternal(int intBlockNum, InternalEntry internalEntries[]) {
     //            (use StaticBuffer::getStaticBlockType())
 
 
-    std::cout<<"---------2--------\n";
-    for (int i=0;i< MIDDLE_INDEX_INTERNAL;i++) { /* each child block of the new right block */
+    for (int i=0;i< rightBlkHeader.numEntries;i++) { /* each child block of the new right block */
         // declare an instance of BlockBuffer to access the child block using
         // constructor 2
         BlockBuffer childBlk(internalEntries[i + MIDDLE_INDEX_INTERNAL +1].lChild);
-        std::cout<<"1000 lchild= "<<internalEntries[i + MIDDLE_INDEX_INTERNAL +1].lChild<<"\n";
+        // std::cout<<"1000 lchild= "<<internalEntries[i + MIDDLE_INDEX_INTERNAL +1].lChild<<"\n";
         HeadInfo header;
 
         childBlk.getHeader(&header);
@@ -1028,7 +1033,7 @@ int BPlusTree::splitInternal(int intBlockNum, InternalEntry internalEntries[]) {
     }
 
     BlockBuffer childBlk(internalEntries[MAX_KEYS_INTERNAL].rChild);
-    std::cout<<"1000 lchild= "<<internalEntries[MAX_KEYS_INTERNAL].rChild<<"\n";
+    // std::cout<<"1000 lchild= "<<internalEntries[MAX_KEYS_INTERNAL].rChild<<"\n";
     HeadInfo header;
 
     childBlk.getHeader(&header);
