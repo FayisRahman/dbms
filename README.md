@@ -1,3 +1,3 @@
 # nitcbase
 
-The students will be implementing their code within this repository.
+My 3rd Year DBMS Project
